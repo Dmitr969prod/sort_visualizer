@@ -236,6 +236,26 @@ namespace Визуализатор_сортировки
             label_Gnome.Text = "Слиянием";
             return label_Gnome;
         }
+        public Label DrawTrackBar1Label()
+        {
+            Label label = new Label();
+            label.Text = "Количество элементов";
+            label.Location = new Point(10, 320);
+            label.Size = new Size(200, 20);
+            return label;
+        }
+
+        public Label DrawTrackBar2Label()
+        {
+            Label label = new Label();
+
+            label.Text = "Скорость сортировки (мс)";
+            label.Location = new Point(10, 370); // было 380, сдвинули выше
+            label.Size = new Size(200, 20);
+            label.BringToFront();
+
+            return label;
+        }
 
 
         public double[] Numbers;

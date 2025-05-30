@@ -21,6 +21,10 @@ namespace Визуализатор_сортировки
         {
             P=P_;
 
+            this.Controls.Add(P.DrawTrackBar1Label());
+
+            this.Controls.Add(P.DrawTrackBar2Label());
+
             this.Controls.Add(P.DrawChart());
 
             this.Controls.Add(P.DrawLabel1());
@@ -51,9 +55,12 @@ namespace Визуализатор_сортировки
 
             this.Controls.Add(P.DrawLabel6());
 
+            
+
             InitializeComponent();
         }
         
+
         private void Form1_Load(object sender, EventArgs e)
         {
             
