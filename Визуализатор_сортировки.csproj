@@ -49,7 +49,7 @@
   <ItemGroup>
     <Compile Include="Algorithm_bubble.cs" />
     <Compile Include="Algorithm_choose.cs" />
-    <Compile Include="Algorithm_gnome.cs" />
+    <Compile Include="Algorithm_merge.cs" />
     <Compile Include="Algorithm_comb.cs" />
     <Compile Include="ISort.cs" />
     <Compile Include="MainForm.cs">

@@ -6,48 +6,44 @@ using System.Threading.Tasks;
 
 namespace Визуализатор_сортировки
 {
-    internal class Algorithm_comb : ISort
+    /// <summary>
+    /// Алгоритм сортировки вставками.
+    /// </summary>
+    internal class Algorithm_insertion : ISort
     {
-
+        /// <summary>
+        /// Сортирует копию массива Numbers алгоритмом вставок и
+        /// возвращает список обменов (index1, index2, value1, value2)
+        /// для пошаговой визуализации.
+        /// </summary>
         public List<(int, int, double, double)> Sort(double[] Numbers)
         {
-            List<(int, int, double, double)> To_Return = new List<(int, int, double, double)>();
-            double[] Numbers_ = new double[Numbers.Length];
-            for (int i = 0; i < Numbers_.Length; i++)
-            {
-                Numbers_[i] = Numbers[i];
-            }
+            var actions = new List<(int, int, double, double)>();
 
-            double gap = Numbers_.Length;
-            bool swapped = true;
-            double temp;
-            while (gap > 1 || swapped)
+            // Работаем с копией, чтобы не изменять исходный массив.
+            double[] arr = (double[])Numbers.Clone();
+
+            for (int i = 1; i < arr.Length; i++)
             {
-                gap /= 1.247;
-                if (gap < 1)
+                int j = i;
+                // Перемещаем arr[j] влево, пока элементы слева больше его.
+                while (j > 0 && arr[j - 1] > arr[j])
                 {
-                    gap = 1;
-                }
-                int i = 0;
-                swapped = false;
-                while (i + gap < Numbers_.Length)
-                {
-                    int j = i + (int)gap;
-                    if (Numbers_[i] > Numbers_[j])
-                    {
-                        temp = Numbers_[i];
-                        Numbers_[i] = Numbers_[j];
-                        Numbers_[j] = temp;
-                        var To_Write = (i,j, Numbers_[i], Numbers_[j]);
-                        To_Return.Add(To_Write);
-                        swapped = true;
-                    }
-                    i++;
+                    // Обмен соседних элементов
+                    double tmp = arr[j - 1];
+                    arr[j - 1] = arr[j];
+                    arr[j] = tmp;
+
+                    // Записываем шаг для визуализатора:
+                    // индексы обмененных элементов и их новые значения
+                    actions.Add((j - 1, j, arr[j - 1], arr[j]));
+
+                    j--; // продолжаем двигаться влево
                 }
             }
 
-
-            return To_Return;
+            return actions;
         }
     }
 }
+

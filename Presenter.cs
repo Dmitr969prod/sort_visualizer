@@ -23,7 +23,7 @@ namespace Визуализатор_сортировки
 
         private System.Windows.Forms.Label label_Gnome { get; set; } = new System.Windows.Forms.Label();
         private System.Windows.Forms.Button Generate { get; set; } = new System.Windows.Forms.Button();
-        private RichTextBox RCB {get; set; } = new RichTextBox();
+        private RichTextBox RCB { get; set; } = new RichTextBox();
         private System.Windows.Forms.TrackBar Trackbar1 { get; set; } = new System.Windows.Forms.TrackBar();
         private System.Windows.Forms.TrackBar Trackbar2 { get; set; } = new System.Windows.Forms.TrackBar();
         private CheckBox AlBubble = new CheckBox();
@@ -37,11 +37,11 @@ namespace Визуализатор_сортировки
         {
             AlBubble.Enabled = true;
             AlBubble.Location = new Point(600, 350/*380*/);
-            AlBubble.Checked= true;
+            AlBubble.Checked = true;
             AlBubble.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             AlBubble.CheckedChanged += (sender, e) =>
             {
-                if (AlBubble.Checked) 
+                if (AlBubble.Checked)
                 {
                     AlChoose.Checked = false;
                     AlGnome.Checked = false;
@@ -85,7 +85,7 @@ namespace Визуализатор_сортировки
                     AlBubble.Checked = false;
                     AlChoose.Checked = false;
                     AlGnome.Checked = false;
-                    Algorithm = new Algorithm_comb();
+                    Algorithm = new Algorithm_insertion();
                     Index = 2;
                 }
             };
@@ -104,7 +104,7 @@ namespace Визуализатор_сортировки
                     AlBubble.Checked = false;
                     AlChoose.Checked = false;
                     AlComb.Checked = false;
-                    Algorithm = new Algorithm_gnome();
+                    Algorithm = new Algorithm_merge();
                     Index = 3;
                 }
             };
@@ -117,7 +117,7 @@ namespace Визуализатор_сортировки
         {
             RCB.Location = new Point(520, 60);
             RCB.Size = new Size(250, 250);
-            RCB.Anchor =  AnchorStyles.Right | AnchorStyles.Bottom | AnchorStyles.Top;
+            RCB.Anchor = AnchorStyles.Right | AnchorStyles.Bottom | AnchorStyles.Top;
             return RCB;
         }
 
@@ -142,7 +142,7 @@ namespace Визуализатор_сортировки
             Trackbar2.Size = new Size(300, 200);
             Trackbar2.Minimum = 0;
             Trackbar2.Maximum = 1000;
-            Trackbar2.Anchor = AnchorStyles.Left |  AnchorStyles.Right | AnchorStyles.Bottom;
+            Trackbar2.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             Trackbar2.ValueChanged += (sender, e) =>
             {
                 label_speed.Text = "Скорость (мс): " + Trackbar2.Value.ToString();
@@ -155,7 +155,7 @@ namespace Визуализатор_сортировки
             Generate.Text = "Генерация чисел";
             Generate.Size = new Size(100, 50);
             Generate.Location = new Point(670, 10);
-            Generate.Anchor =  AnchorStyles.Right | AnchorStyles.Top;
+            Generate.Anchor = AnchorStyles.Right | AnchorStyles.Top;
             Generate.Click += (sender, e) =>
             {
                 Work();
@@ -185,7 +185,7 @@ namespace Визуализатор_сортировки
         public System.Windows.Forms.Label DrawLabel1()
         {
             label_count.Size = new Size(150, 30);
-            label_count.Anchor = AnchorStyles.Top| AnchorStyles.Right;
+            label_count.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label_count.Location = new Point(520, 10);
             label_count.Text = "Количество: " + Trackbar1.Value.ToString();
             return label_count;
@@ -215,7 +215,7 @@ namespace Визуализатор_сортировки
             label_Choose.Size = new Size(70, 30);
             label_Choose.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Choose.Location = new Point(580, 390);
-            label_Choose.Text = "Выбор";
+            label_Choose.Text = "Выбором";
             return label_Choose;
         }
 
@@ -224,7 +224,7 @@ namespace Визуализатор_сортировки
             label_Comb.Size = new Size(70, 30);
             label_Comb.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Comb.Location = new Point(683, 330);
-            label_Comb.Text = "Расчёска";
+            label_Comb.Text = "Вставками";
             return label_Comb;
         }
 
@@ -233,7 +233,7 @@ namespace Визуализатор_сортировки
             label_Gnome.Size = new Size(70, 30);
             label_Gnome.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Gnome.Location = new Point(697, 390);
-            label_Gnome.Text = "Гном";
+            label_Gnome.Text = "Слиянием";
             return label_Gnome;
         }
 
@@ -251,7 +251,7 @@ namespace Визуализатор_сортировки
 
         public string Return_String()
         {
-            return (String.Join("\n", Numbers)); 
+            return (String.Join("\n", Numbers));
         }
 
         public void Work()
@@ -278,20 +278,20 @@ namespace Визуализатор_сортировки
             }
             RCB.Text += "Сортировка " + What_Kind() + " на " + Trackbar1.Value + " элементов завершена за " + Iters + " итераций\n";
         }
-        
+
 
         public string What_Kind()
         {
-            switch (Index) 
+            switch (Index)
             {
                 case 0:
                     return "пузырьком";
                 case 1:
                     return "выбором";
                 case 2:
-                    return "расчёской";
+                    return "вставками";
                 case 3:
-                    return "методом гнома";
+                    return "методом слияния";
             }
             return "";
         }
