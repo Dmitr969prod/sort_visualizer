@@ -259,25 +259,39 @@ namespace Визуализатор_сортировки
             Start_work(Trackbar1.Value);
             Data.Series[0].Points.Clear();
 
-
             for (int i = 0; i < Numbers.Length; i++)
             {
                 Data.Series[0].Points.AddXY(i, Numbers[i]);
+                Data.Series[0].Points[i].Color = Color.Blue; // обычный цвет
             }
+
             List<(int, int, double, double)> Path = Algorithm.Sort(Numbers);
 
             Iters = 0;
-            foreach ((int, int, double, double) F in Path)
+            foreach ((int i1, int i2, double v1, double v2) in Path)
             {
                 Iters++;
-                Numbers[F.Item1] = F.Item3;
-                Numbers[F.Item2] = F.Item4;
-                Data.Series[0].Points.DataBindY(Numbers);
+
+                Numbers[i1] = v1;
+                Numbers[i2] = v2;
+
+                for (int i = 0; i < Numbers.Length; i++)
+                {
+                    Data.Series[0].Points[i].YValues[0] = Numbers[i];
+                    Data.Series[0].Points[i].Color = Color.Blue; // сброс цвета
+                }
+
+                // Подсветка сравниваемых/переставляемых элементов
+                Data.Series[0].Points[i1].Color = Color.Red;
+                Data.Series[0].Points[i2].Color = Color.Green;
+
                 Data.Update();
                 Task.Delay(Trackbar2.Value).GetAwaiter().GetResult();
             }
-            RCB.Text += "Сортировка " + What_Kind() + " на " + Trackbar1.Value + " элементов завершена за " + Iters + " итераций\n";
+
+            RCB.Text += $"Сортировка {What_Kind()} на {Trackbar1.Value} элементов завершена за {Iters} итераций\n";
         }
+
 
 
         public string What_Kind()
