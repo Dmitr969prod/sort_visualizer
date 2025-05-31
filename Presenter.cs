@@ -206,7 +206,7 @@ namespace Визуализатор_сортировки
             label_Bubble.Size = new Size(70, 30);
             label_Bubble.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Bubble.Location = new Point(575, 330);
-            label_Bubble.Text = "Пузырёк";
+            label_Bubble.Text = "Вставками";
             return label_Bubble;
         }
 
@@ -224,7 +224,7 @@ namespace Визуализатор_сортировки
             label_Comb.Size = new Size(70, 30);
             label_Comb.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Comb.Location = new Point(683, 330);
-            label_Comb.Text = "Вставками";
+            label_Comb.Text = "Пузырек";
             return label_Comb;
         }
 
@@ -319,11 +319,11 @@ namespace Визуализатор_сортировки
             switch (Index)
             {
                 case 0:
-                    return "пузырьком";
+                    return "вставками";
                 case 1:
                     return "выбором";
                 case 2:
-                    return "вставками";
+                    return "пузырьком";
                 case 3:
                     return "методом слияния";
             }
