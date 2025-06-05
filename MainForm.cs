@@ -58,12 +58,16 @@ namespace Визуализатор_сортировки
 
             this.Controls.Add(P.DrawDescriptionBox());
 
-            this.Controls.Add(P.DrawPauseButton());
+            
 
             this.Controls.Add(P.DrawTrackBar_1());
             this.Controls.Add(P.DrawTrackBar_2());
             this.Controls.Add(P.DrawLegendWithColors());
-            
+            this.Controls.Add(P.DrawStartButton());
+            this.Controls.Add(P.DrawPauseButton());
+            this.Controls.Add(P.DrawStepButton());
+
+
 
 
 

@@ -11,6 +11,19 @@ namespace Визуализатор_сортировки
     {
         public ISort Algorithm = null;
         private Random r = new Random();
+        private bool paused = false;
+        private bool stepByStep = false;
+        private TaskCompletionSource<bool> stepSignal;
+        private bool stepPending = false;   // запрос на один шаг
+
+
+        private bool stepMode = false;       // включён ли режим "только один шаг"
+        
+
+        private readonly Button _startBtn = new Button();
+        private readonly Button _pauseBtn = new Button();
+        private readonly Button _stepBtn = new Button();
+
 
         private bool _isPaused = false;
         private readonly Button _pauseButton = new Button();
@@ -37,22 +50,66 @@ namespace Визуализатор_сортировки
         private TextBox DescriptionBox = new TextBox();
 
         private int Index = 0, Iters;
-
+        // ───────── кнопки ─────────
+        public Button DrawStartButton()
+        {
+            _startBtn.Text = "Старт";
+            _startBtn.Size = new Size(85, 35);
+            _startBtn.Location = new Point(510, 285);
+            _startBtn.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            _startBtn.Click += (s, e) =>
+            {
+                paused = false;
+                stepMode = false;                    // автоматический режим
+                stepSignal?.TrySetResult(true);      // если сортировка ждёт – продолжаем
+            };
+            return _startBtn;
+        }
 
         public Button DrawPauseButton()
         {
-            _pauseButton.Text = "Пауза";
-            _pauseButton.Size = new Size(100, 50);
-            _pauseButton.Location = new Point(595, 280); // под кнопкой генерации
-            _pauseButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
-            _pauseButton.Click += (s, e) =>
+            _pauseBtn.Text = "Пауза";
+            _pauseBtn.Size = new Size(85, 35);
+            _pauseBtn.Location = new Point(595, 285);
+            _pauseBtn.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            _pauseBtn.Click += (s, e) =>
             {
-                _isPaused = !_isPaused;
-                _pauseButton.Text = _isPaused ? "Продолжить" : "Пауза";
+                paused = !paused;
+                
+                if (!paused) stepSignal?.TrySetResult(true);
             };
-            return _pauseButton;
+            return _pauseBtn;
         }
 
+        public Button DrawStepButton()
+        {
+            _stepBtn.Text = "Шаг →";
+            _stepBtn.Size = new Size(85, 35);
+            _stepBtn.Location = new Point(685, 285);
+            _stepBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _stepBtn.Click += (s, e) =>
+            {
+                stepPending = true;   // просим выполнить ОДИН шаг
+                paused = false;  // снимаем паузу ровно на этот шаг
+            };
+            return _stepBtn;
+        }
+
+
+        /*   public Button DrawPauseButton()
+           {
+               _pauseButton.Text = "Пауза";
+               _pauseButton.Size = new Size(100, 50);
+               _pauseButton.Location = new Point(595, 280); // под кнопкой генерации
+               _pauseButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+               _pauseButton.Click += (s, e) =>
+               {
+                   _isPaused = !_isPaused;
+                   _pauseButton.Text = _isPaused ? "Продолжить" : "Пауза";
+               };
+               return _pauseButton;
+           }
+   */
 
         public TextBox DrawDescriptionBox()
         {
@@ -296,7 +353,7 @@ namespace Визуализатор_сортировки
             label_speed.Size = new Size(150, 20);
             label_speed.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label_speed.Location = new Point(520, 40);
-            label_speed.Text = "Скорость (мс): " + Trackbar2.Value.ToString();
+            label_speed.Text = "Задержка (мс): " + Trackbar2.Value.ToString();
             return label_speed;
         }
 
@@ -354,7 +411,7 @@ namespace Визуализатор_сортировки
         {
             var label = new Label
             {
-                Text = "Скорость сортировки (мс)",
+                Text = "Время задержки (мс)",
                 Location = new Point(10, 370),
                 Size = new Size(200, 20),
 
@@ -381,74 +438,90 @@ namespace Визуализатор_сортировки
         {
             return (String.Join("\n", Numbers));
         }
+        private void LogLine(string msg)
+        {
+            RCB.AppendText(msg + Environment.NewLine);
+            RCB.SelectionStart = RCB.TextLength;
+            RCB.ScrollToCaret();
+        }
+
 
         public async void Work()
         {
+            /* ---------- 1. проверка выбранного алгоритма ---------- */
             if (Algorithm == null)
             {
-                MessageBox.Show("Сначала выберите алгоритм сортировки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Сначала выберите алгоритм сортировки.",
+                                "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            Start_work(Trackbar1.Value);
+            /* ---------- 2. подготовка исходных данных ---------- */
+            Start_work(Math.Max(2, Trackbar1.Value));           // минимум 2 элемента
             Data.Series[0].Points.Clear();
-
             for (int i = 0; i < Numbers.Length; i++)
             {
                 Data.Series[0].Points.AddXY(i, Numbers[i]);
                 Data.Series[0].Points[i].Color = Color.Blue;
             }
 
-            List<(int, int, double, double)> path = Algorithm.Sort(Numbers);
+            /* ---------- 3. получаем последовательность шагов ---------- */
+            var path = Algorithm.Sort(Numbers);                 // (i1, i2, v1, v2)
             Iters = 0;
 
+            /* ---------- 4. основной цикл визуализации ---------- */
             foreach ((int i1, int i2, double v1, double v2) in path)
             {
-                // 🔹 ожидание паузы
-                while (_isPaused) await Task.Delay(50);
-
                 Iters++;
 
-                // 1️⃣ Показать СРАВНЕНИЕ
-                for (int i = 0; i < Numbers.Length; i++)
-                    Data.Series[0].Points[i].Color = Color.Blue;
+                /* 4.1 подсветка сравнения */
+                for (int k = 0; k < Numbers.Length; k++)
+                    Data.Series[0].Points[k].Color = Color.Blue;
 
-                Data.Series[0].Points[i1].Color = Color.Red;
-                Data.Series[0].Points[i2].Color = Color.Orange;
-
-                RCB.AppendText($"Сравнение: [{i1}] = {Numbers[i1]:0.00} и [{i2}] = {Numbers[i2]:0.00}\n");
+                Data.Series[0].Points[i1].Color = Color.Red;      // левый
+                Data.Series[0].Points[i2].Color = Color.Orange;   // правый
+                LogLine($"Сравнение: [{i1}] = {Numbers[i1]:0.00} и [{i2}] = {Numbers[i2]:0.00}");
                 Data.Update();
-                await Task.Delay(Trackbar2.Value);
 
-                bool isSwap = Numbers[i1] != v1 || Numbers[i2] != v2;
-                if (isSwap)
+                /* 4.2 пауза / один шаг / авто-режим */
+                while (paused && !stepPending)                    // классическая пауза
+                    await Task.Delay(50);
+
+                if (stepPending)                                  // выполнить ровно ОДИН шаг
+                {
+                    stepPending = false;      // «поглощаем» запрос
+                    paused = true;       // сразу вернёмся в паузу после шага
+                }
+                else                                              // автоматический режим
+                {
+                    await Task.Delay(Math.Max(10, Trackbar2.Value));
+                }
+
+                /* 4.3 анимация обмена (если требуется) */
+                bool needSwap = Numbers[i1] != v1 || Numbers[i2] != v2;
+                if (needSwap)
                 {
                     double old1 = Numbers[i1];
                     double old2 = Numbers[i2];
+                    LogLine($"Обмен: [{i1}] ⇄ [{i2}]");
 
-                    RCB.AppendText($"Обмен: [{i1}] ⇄ [{i2}]\n");
+                    const int frames = 10;
+                    int frameDelay = Math.Max(10, Trackbar2.Value) / frames;
 
-                    int steps = 10;
-                    for (int s = 1; s <= steps; s++)
+                    for (int f = 1; f <= frames; f++)
                     {
-                        // 🔹 ожидание паузы внутри анимации
-                        while (_isPaused) await Task.Delay(50);
+                        double t = f / (double)frames;
+                        Numbers[i1] = old1 + (v1 - old1) * t;
+                        Numbers[i2] = old2 + (v2 - old2) * t;
 
-                        double t = s / (double)steps;
-                        double interpolated1 = old1 + (v1 - old1) * t;
-                        double interpolated2 = old2 + (v2 - old2) * t;
-
-                        Numbers[i1] = interpolated1;
-                        Numbers[i2] = interpolated2;
-
-                        for (int i = 0; i < Numbers.Length; i++)
-                            Data.Series[0].Points[i].YValues[0] = Numbers[i];
+                        for (int k = 0; k < Numbers.Length; k++)
+                            Data.Series[0].Points[k].YValues[0] = Numbers[k];
 
                         Data.Series[0].Points[i1].Color = Color.Green;
                         Data.Series[0].Points[i2].Color = Color.Green;
-
                         Data.Update();
-                        await Task.Delay(Trackbar2.Value / steps);
+
+                        await Task.Delay(frameDelay);
                     }
 
                     Numbers[i1] = v1;
@@ -456,14 +529,24 @@ namespace Визуализатор_сортировки
                 }
                 else
                 {
-                    RCB.AppendText("→ Без обмена\n");
+                    LogLine("→ Без обмена");
                 }
 
-                RCB.AppendText("\n");
+                LogLine("");   // пустая строка-разделитель
             }
 
-            RCB.AppendText($"Сортировка {What_Kind()} завершена за {Iters} шагов\n\n");
+            /* ---------- 5. завершение ---------- */
+            for (int k = 0; k < Numbers.Length; k++)
+                Data.Series[0].Points[k].Color = Color.Blue;
+
+            Data.Update();
+            LogLine($"Сортировка {What_Kind()} завершена за {Iters} шагов");
+
+            paused = false;   // сброс состояний
+            stepPending = false;
         }
+
+
 
 
 
