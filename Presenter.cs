@@ -9,8 +9,11 @@ namespace Визуализатор_сортировки
 {
     public class Presenter
     {
-        public ISort Algorithm = new Algorithm_bubble();
+        public ISort Algorithm = null;
         private Random r = new Random();
+
+
+
 
         Chart Data = new Chart();
         private System.Windows.Forms.Label label_count { get; set; } = new System.Windows.Forms.Label();
@@ -33,6 +36,10 @@ namespace Визуализатор_сортировки
         private TextBox DescriptionBox = new TextBox();
 
         private int Index = 0, Iters;
+
+       
+
+
 
         public TextBox DrawDescriptionBox()
         {
@@ -65,9 +72,9 @@ namespace Визуализатор_сортировки
                     Index = 0;
                     MessageBox.Show(
                     "Сортировка вставками (Insertion sort) — осуществляется проход по массиву слева направо. Каждый новый элемент вставляется в уже отсортированную часть массива на своё место: сравнивается с элементами слева, и при необходимости сдвигает их вправо. Алгоритм эффективен при частично отсортированных данных и работает \"на месте\", без выделения дополнительной памяти.",
-                    "Описание алгоритма: Вставками",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
+                    "Описание алгоритма: Вставками"
+                    //MessageBoxButtons.OK,
+                    //MessageBoxIcon.Information
                 );
 
                 }
@@ -150,10 +157,55 @@ namespace Визуализатор_сортировки
         public RichTextBox DrawRichTextBox()
         {
             RCB.Location = new Point(520, 60);
-            RCB.Size = new Size(250, 250);
-            RCB.Anchor = AnchorStyles.Right | AnchorStyles.Bottom | AnchorStyles.Top;
+            RCB.Size = new Size(250, 120);
+            RCB.Anchor = AnchorStyles.Right | AnchorStyles.Top | AnchorStyles.Bottom;
+            RCB.ReadOnly = true;
+            RCB.Font = new Font("Segoe UI", 9);
+
             return RCB;
         }
+        public Panel DrawLegendWithColors()
+        {
+            Panel legendPanel = new Panel();
+            legendPanel.Size = new Size(250, 100);
+            legendPanel.Location = new Point(520, 185); // ниже RichTextBox
+            legendPanel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
+            string[] texts = {
+        "обычный элемент",
+        "сравнение (левый)",
+        "сравнение (правый)",
+        "обмен"
+    };
+
+            Color[] colors = {
+        Color.Blue,
+        Color.Red,
+        Color.Orange,
+        Color.Green
+    };
+
+            for (int i = 0; i < texts.Length; i++)
+            {
+                Panel colorDot = new Panel();
+                colorDot.Size = new Size(12, 12);
+                colorDot.Location = new Point(0, i * 20 + 4);
+                colorDot.BackColor = colors[i];
+
+                Label label = new Label();
+                label.Text = texts[i];
+                label.Location = new Point(20, i * 20);
+                label.Size = new Size(200, 20);
+
+                legendPanel.Controls.Add(colorDot);
+                legendPanel.Controls.Add(label);
+            }
+
+            return legendPanel;
+        }
+
+
+
 
         public System.Windows.Forms.TrackBar DrawTrackBar_1()
         {
@@ -272,21 +324,30 @@ namespace Визуализатор_сортировки
         }
         public Label DrawTrackBar1Label()
         {
-            Label label = new Label();
-            label.Text = "Количество элементов";
-            label.Location = new Point(10, 320);
-            label.Size = new Size(200, 20);
+            var label = new Label
+            {
+                Text = "Количество элементов",
+                Location = new Point(10, 320),
+                Size = new Size(200, 20),
+
+                
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            };
+
             return label;
         }
 
         public Label DrawTrackBar2Label()
         {
-            Label label = new Label();
+            var label = new Label
+            {
+                Text = "Скорость сортировки (мс)",
+                Location = new Point(10, 370),
+                Size = new Size(200, 20),
 
-            label.Text = "Скорость сортировки (мс)";
-            label.Location = new Point(10, 370); // было 380, сдвинули выше
-            label.Size = new Size(200, 20);
-            label.BringToFront();
+                
+                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            };
 
             return label;
         }
@@ -310,6 +371,11 @@ namespace Визуализатор_сортировки
 
         public async void Work()
         {
+            if (Algorithm == null)
+            {
+                MessageBox.Show("Сначала выберите алгоритм сортировки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
             Start_work(Trackbar1.Value);
             Data.Series[0].Points.Clear();
 
@@ -326,25 +392,61 @@ namespace Визуализатор_сортировки
             {
                 Iters++;
 
-                Numbers[i1] = v1;
-                Numbers[i2] = v2;
-
+                // 1️⃣ Показать СРАВНЕНИЕ
                 for (int i = 0; i < Numbers.Length; i++)
-                {
-                    Data.Series[0].Points[i].YValues[0] = Numbers[i];
                     Data.Series[0].Points[i].Color = Color.Blue;
-                }
 
                 Data.Series[0].Points[i1].Color = Color.Red;
-                Data.Series[0].Points[i2].Color = Color.Green;
+                Data.Series[0].Points[i2].Color = Color.Orange;
 
+                RCB.AppendText($"Сравнение: [{i1}] = {Numbers[i1]:0.00} и [{i2}] = {Numbers[i2]:0.00}\n");
                 Data.Update();
+                await Task.Delay(Trackbar2.Value); // задержка до обмена
 
-                await Task.Delay(Trackbar2.Value); // ⬅️ не блокирует интерфейс
+                // 2️⃣ Если обмен — показать отдельно
+                bool isSwap = Numbers[i1] != v1 || Numbers[i2] != v2;
+                if (isSwap)
+                {
+                    double old1 = Numbers[i1];
+                    double old2 = Numbers[i2];
+
+                    RCB.AppendText($"Обмен: [{i1}] ⇄ [{i2}]\n");
+
+                    int steps = 10; // количество кадров
+                    for (int s = 1; s <= steps; s++)
+                    {
+                        double t = s / (double)steps;
+                        double interpolated1 = old1 + (v1 - old1) * t;
+                        double interpolated2 = old2 + (v2 - old2) * t;
+
+                        Numbers[i1] = interpolated1;
+                        Numbers[i2] = interpolated2;
+
+                        for (int i = 0; i < Numbers.Length; i++)
+                            Data.Series[0].Points[i].YValues[0] = Numbers[i];
+
+                        Data.Series[0].Points[i1].Color = Color.Green;
+                        Data.Series[0].Points[i2].Color = Color.Green;
+
+                        Data.Update();
+                        await Task.Delay(Trackbar2.Value / steps); 
+                    }
+
+                    Numbers[i1] = v1;
+                    Numbers[i2] = v2;
+                }
+                else
+                {
+                    RCB.AppendText($"→ Без обмена\n");
+                }
+
+                RCB.AppendText("\n");
             }
 
-            RCB.Text += $"Сортировка {What_Kind()} на {Trackbar1.Value} элементов завершена за {Iters} итераций\n";
+            RCB.AppendText($"Сортировка {What_Kind()} завершена за {Iters} шагов\n\n");
         }
+
+
 
 
 
