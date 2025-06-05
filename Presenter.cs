@@ -30,14 +30,29 @@ namespace Визуализатор_сортировки
         private CheckBox AlChoose = new CheckBox();
         private CheckBox AlGnome = new CheckBox();
         private CheckBox AlComb = new CheckBox();
+        private TextBox DescriptionBox = new TextBox();
+
         private int Index = 0, Iters;
 
+        public TextBox DrawDescriptionBox()
+        {
+            DescriptionBox.Multiline = true;
+            DescriptionBox.ReadOnly = true;
+            DescriptionBox.ScrollBars = ScrollBars.Vertical;
+            DescriptionBox.Size = new Size(250, 120);
+            DescriptionBox.Location = new Point(520, 470); // размещаем ниже остальных
+            DescriptionBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            DescriptionBox.Font = new Font("Segoe UI", 9);
+            DescriptionBox.Text = ""; // начальное пустое
+
+            return DescriptionBox;
+        }
 
         public CheckBox DrawCheckBox1()
         {
             AlBubble.Enabled = true;
             AlBubble.Location = new Point(600, 350/*380*/);
-            AlBubble.Checked = true;
+            AlBubble.Checked = false;
             AlBubble.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             AlBubble.CheckedChanged += (sender, e) =>
             {
@@ -48,6 +63,13 @@ namespace Визуализатор_сортировки
                     AlComb.Checked = false;
                     Algorithm = new Algorithm_bubble();
                     Index = 0;
+                    MessageBox.Show(
+                    "Сортировка вставками (Insertion sort) — осуществляется проход по массиву слева направо. Каждый новый элемент вставляется в уже отсортированную часть массива на своё место: сравнивается с элементами слева, и при необходимости сдвигает их вправо. Алгоритм эффективен при частично отсортированных данных и работает \"на месте\", без выделения дополнительной памяти.",
+                    "Описание алгоритма: Вставками",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+
                 }
             };
 
@@ -68,6 +90,10 @@ namespace Визуализатор_сортировки
                     AlComb.Checked = false;
                     Algorithm = new Algorithm_choose();
                     Index = 1;
+                    MessageBox.Show(
+                    "Сортировка выбором (Selection sort) — на каждом шаге из неотсортированной части массива выбирается минимальный элемент и меняется местами с первым элементом этой части. Далее алгоритм повторяется для оставшихся элементов. Этот метод легко реализуется, но не является стабильным и требует O(n²) времени.",
+                    "Сортировка выбором"
+                );
                 }
             };
             return AlChoose;
@@ -87,6 +113,10 @@ namespace Визуализатор_сортировки
                     AlGnome.Checked = false;
                     Algorithm = new Algorithm_insertion();
                     Index = 2;
+                    MessageBox.Show(
+                "Сортировка пузырьком (Bubble sort) — выполняется некоторое количество проходов по массиву: начиная от начала, последовательно сравниваются пары соседних элементов. Если первый элемент больше второго — они меняются местами. Процесс повторяется до тех пор, пока при очередном проходе не будет выполнено ни одной перестановки. Каждый проход \"выталкивает\" наибольший элемент к концу массива, формируя отсортированную часть.",
+                "Сортировка пузырьком"
+            );
                 }
             };
             return AlComb;
@@ -106,6 +136,10 @@ namespace Визуализатор_сортировки
                     AlComb.Checked = false;
                     Algorithm = new Algorithm_merge();
                     Index = 3;
+                    MessageBox.Show(
+                    "Сортировка слиянием (Merge sort) — реализует принцип «разделяй и властвуй»: массив рекурсивно делится на две части до тех пор, пока не останутся элементы по одному. Затем пары объединяются в отсортированном порядке. Алгоритм требует дополнительную память, но гарантирует время выполнения O(n log n) и является стабильным.",
+                    "Сортировка слиянием"
+                );
                 }
             };
             return AlGnome;
@@ -274,7 +308,7 @@ namespace Визуализатор_сортировки
             return (String.Join("\n", Numbers));
         }
 
-        public void Work()
+        public async void Work()
         {
             Start_work(Trackbar1.Value);
             Data.Series[0].Points.Clear();
@@ -282,12 +316,12 @@ namespace Визуализатор_сортировки
             for (int i = 0; i < Numbers.Length; i++)
             {
                 Data.Series[0].Points.AddXY(i, Numbers[i]);
-                Data.Series[0].Points[i].Color = Color.Blue; // обычный цвет
+                Data.Series[0].Points[i].Color = Color.Blue;
             }
 
             List<(int, int, double, double)> Path = Algorithm.Sort(Numbers);
-
             Iters = 0;
+
             foreach ((int i1, int i2, double v1, double v2) in Path)
             {
                 Iters++;
@@ -298,19 +332,20 @@ namespace Визуализатор_сортировки
                 for (int i = 0; i < Numbers.Length; i++)
                 {
                     Data.Series[0].Points[i].YValues[0] = Numbers[i];
-                    Data.Series[0].Points[i].Color = Color.Blue; // сброс цвета
+                    Data.Series[0].Points[i].Color = Color.Blue;
                 }
 
-                // Подсветка сравниваемых/переставляемых элементов
                 Data.Series[0].Points[i1].Color = Color.Red;
                 Data.Series[0].Points[i2].Color = Color.Green;
 
                 Data.Update();
-                Task.Delay(Trackbar2.Value).GetAwaiter().GetResult();
+
+                await Task.Delay(Trackbar2.Value); // ⬅️ не блокирует интерфейс
             }
 
             RCB.Text += $"Сортировка {What_Kind()} на {Trackbar1.Value} элементов завершена за {Iters} итераций\n";
         }
+
 
 
 
