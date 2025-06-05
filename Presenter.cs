@@ -12,7 +12,8 @@ namespace Визуализатор_сортировки
         public ISort Algorithm = null;
         private Random r = new Random();
 
-
+        private bool _isPaused = false;
+        private readonly Button _pauseButton = new Button();
 
 
         Chart Data = new Chart();
@@ -37,8 +38,20 @@ namespace Визуализатор_сортировки
 
         private int Index = 0, Iters;
 
-       
 
+        public Button DrawPauseButton()
+        {
+            _pauseButton.Text = "Пауза";
+            _pauseButton.Size = new Size(100, 50);
+            _pauseButton.Location = new Point(595, 280); // под кнопкой генерации
+            _pauseButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
+            _pauseButton.Click += (s, e) =>
+            {
+                _isPaused = !_isPaused;
+                _pauseButton.Text = _isPaused ? "Продолжить" : "Пауза";
+            };
+            return _pauseButton;
+        }
 
 
         public TextBox DrawDescriptionBox()
@@ -298,7 +311,7 @@ namespace Визуализатор_сортировки
 
         public System.Windows.Forms.Label DrawLabel4()
         {
-            label_Choose.Size = new Size(70, 30);
+            label_Choose.Size = new Size(85, 30);
             label_Choose.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Choose.Location = new Point(580, 390);
             label_Choose.Text = "Выбором";
@@ -376,6 +389,7 @@ namespace Визуализатор_сортировки
                 MessageBox.Show("Сначала выберите алгоритм сортировки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
             Start_work(Trackbar1.Value);
             Data.Series[0].Points.Clear();
 
@@ -385,11 +399,14 @@ namespace Визуализатор_сортировки
                 Data.Series[0].Points[i].Color = Color.Blue;
             }
 
-            List<(int, int, double, double)> Path = Algorithm.Sort(Numbers);
+            List<(int, int, double, double)> path = Algorithm.Sort(Numbers);
             Iters = 0;
 
-            foreach ((int i1, int i2, double v1, double v2) in Path)
+            foreach ((int i1, int i2, double v1, double v2) in path)
             {
+                // 🔹 ожидание паузы
+                while (_isPaused) await Task.Delay(50);
+
                 Iters++;
 
                 // 1️⃣ Показать СРАВНЕНИЕ
@@ -401,9 +418,8 @@ namespace Визуализатор_сортировки
 
                 RCB.AppendText($"Сравнение: [{i1}] = {Numbers[i1]:0.00} и [{i2}] = {Numbers[i2]:0.00}\n");
                 Data.Update();
-                await Task.Delay(Trackbar2.Value); // задержка до обмена
+                await Task.Delay(Trackbar2.Value);
 
-                // 2️⃣ Если обмен — показать отдельно
                 bool isSwap = Numbers[i1] != v1 || Numbers[i2] != v2;
                 if (isSwap)
                 {
@@ -412,9 +428,12 @@ namespace Визуализатор_сортировки
 
                     RCB.AppendText($"Обмен: [{i1}] ⇄ [{i2}]\n");
 
-                    int steps = 10; // количество кадров
+                    int steps = 10;
                     for (int s = 1; s <= steps; s++)
                     {
+                        // 🔹 ожидание паузы внутри анимации
+                        while (_isPaused) await Task.Delay(50);
+
                         double t = s / (double)steps;
                         double interpolated1 = old1 + (v1 - old1) * t;
                         double interpolated2 = old2 + (v2 - old2) * t;
@@ -429,7 +448,7 @@ namespace Визуализатор_сортировки
                         Data.Series[0].Points[i2].Color = Color.Green;
 
                         Data.Update();
-                        await Task.Delay(Trackbar2.Value / steps); 
+                        await Task.Delay(Trackbar2.Value / steps);
                     }
 
                     Numbers[i1] = v1;
@@ -437,7 +456,7 @@ namespace Визуализатор_сортировки
                 }
                 else
                 {
-                    RCB.AppendText($"→ Без обмена\n");
+                    RCB.AppendText("→ Без обмена\n");
                 }
 
                 RCB.AppendText("\n");
