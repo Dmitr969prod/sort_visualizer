@@ -66,6 +66,8 @@ namespace Визуализатор_сортировки
             this.Controls.Add(P.DrawStartButton());
             this.Controls.Add(P.DrawPauseButton());
             this.Controls.Add(P.DrawStepButton());
+            this.Controls.Add(P.DrawResetButton());
+
 
 
 

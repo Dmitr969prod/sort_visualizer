@@ -1,43 +1,38 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Визуализатор_сортировки
 {
-    public class Algorithm_bubble : ISort
+
+    internal class Algorithm_bubble : ISort
     {
-
-        public List<(int, int, double, double)> Sort(double[] Numbers)
+        public List<(int, int, double, double)> Sort(double[] numbers)
         {
-            List<(int, int, double, double)> To_Return = new List<(int, int, double, double)>();
-            double temp;
-            double[] Numbers_ = new double[Numbers.Length];
-            for (int i = 0; i < Numbers_.Length; i++)
-            {
-                Numbers_[i] = Numbers[i];
-            }
+            var steps = new List<(int, int, double, double)>();
+            double[] arr = (double[])numbers.Clone();   
 
-
-            for (int i = 0; i < Numbers_.Length + 1; i++)
+            int n = arr.Length;
+            for (int pass = 0; pass < n - 1; pass++)
             {
-                for (int j = i + 1; j < Numbers_.Length; j++)
+                for (int j = 0; j < n - pass - 1; j++)
                 {
-                    if (Numbers_[i] > Numbers_[j])
+                    
+                    if (arr[j] > arr[j + 1])                  
                     {
-                        temp = Numbers_[i];
-                        Numbers_[i] = Numbers_[j];
-                        Numbers_[j] = temp;
-                        var To_Write = (i,j, Numbers_[i], Numbers_[j]);
-                        To_Return.Add(To_Write);
+                        double tmp = arr[j];
+                        arr[j] = arr[j + 1];
+                        arr[j + 1] = tmp;
+
+                        steps.Add((j, j + 1, arr[j], arr[j + 1]));   
+                    }
+                    else                                       
+                    {
+                        steps.Add((j, j + 1, arr[j], arr[j + 1]));   
                     }
                 }
             }
-            return To_Return;
+
+            return steps;
         }
     }
 }

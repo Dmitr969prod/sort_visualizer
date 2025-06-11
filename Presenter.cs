@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
@@ -15,6 +16,13 @@ namespace Визуализатор_сортировки
         private bool stepByStep = false;
         private TaskCompletionSource<bool> stepSignal;
         private bool stepPending = false;   // запрос на один шаг
+ 
+        private readonly Button _resetBtn = new Button();
+        private volatile bool _cancelRequested = false;   // сигнал «остановить сортировку»
+
+
+
+
 
 
         private bool stepMode = false;       // включён ли режим "только один шаг"
@@ -50,7 +58,28 @@ namespace Визуализатор_сортировки
         private TextBox DescriptionBox = new TextBox();
 
         private int Index = 0, Iters;
+
+
         // ───────── кнопки ─────────
+
+
+        public Button DrawResetButton()
+        {
+            _resetBtn.Text = "Сброс";
+            _resetBtn.Size = new Size(85, 35);
+            _resetBtn.Location = new Point(490, 400);          // рядом с «Шаг →»
+            _resetBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            _resetBtn.Click += (s, e) =>
+            {
+                // 1) сообщаем Work(), что нужно прервать цикл
+                _cancelRequested = true;
+                // 2) снимаем все режимы ожидания, чтобы Work() не «спал»
+                paused = false;
+                stepPending = false;
+            };
+            return _resetBtn;
+        }
+
         public Button DrawStartButton()
         {
             _startBtn.Text = "Старт";
@@ -96,20 +125,7 @@ namespace Визуализатор_сортировки
         }
 
 
-        /*   public Button DrawPauseButton()
-           {
-               _pauseButton.Text = "Пауза";
-               _pauseButton.Size = new Size(100, 50);
-               _pauseButton.Location = new Point(595, 280); // под кнопкой генерации
-               _pauseButton.Anchor = AnchorStyles.Right | AnchorStyles.Top;
-               _pauseButton.Click += (s, e) =>
-               {
-                   _isPaused = !_isPaused;
-                   _pauseButton.Text = _isPaused ? "Продолжить" : "Пауза";
-               };
-               return _pauseButton;
-           }
-   */
+
 
         public TextBox DrawDescriptionBox()
         {
@@ -141,11 +157,10 @@ namespace Визуализатор_сортировки
                     Algorithm = new Algorithm_bubble();
                     Index = 0;
                     MessageBox.Show(
-                    "Сортировка вставками (Insertion sort) — осуществляется проход по массиву слева направо. Каждый новый элемент вставляется в уже отсортированную часть массива на своё место: сравнивается с элементами слева, и при необходимости сдвигает их вправо. Алгоритм эффективен при частично отсортированных данных и работает \"на месте\", без выделения дополнительной памяти.",
-                    "Описание алгоритма: Вставками"
-                    //MessageBoxButtons.OK,
-                    //MessageBoxIcon.Information
+                    "Сортировка пузырьком (Bubble sort) — выполняется некоторое количество проходов по массиву: начиная от начала, последовательно сравниваются пары соседних элементов. Если первый элемент больше второго — они меняются местами. Процесс повторяется до тех пор, пока при очередном проходе не будет выполнено ни одной перестановки. Каждый проход \"выталкивает\" наибольший элемент к концу массива, формируя отсортированную часть.",
+                    "Сортировка пузырьком"
                 );
+                   
 
                 }
             };
@@ -191,9 +206,12 @@ namespace Визуализатор_сортировки
                     Algorithm = new Algorithm_insertion();
                     Index = 2;
                     MessageBox.Show(
-                "Сортировка пузырьком (Bubble sort) — выполняется некоторое количество проходов по массиву: начиная от начала, последовательно сравниваются пары соседних элементов. Если первый элемент больше второго — они меняются местами. Процесс повторяется до тех пор, пока при очередном проходе не будет выполнено ни одной перестановки. Каждый проход \"выталкивает\" наибольший элемент к концу массива, формируя отсортированную часть.",
-                "Сортировка пузырьком"
-            );
+                   "Сортировка вставками (Insertion sort) — осуществляется проход по массиву слева направо. Каждый новый элемент вставляется в уже отсортированную часть массива на своё место: сравнивается с элементами слева, и при необходимости сдвигает их вправо. Алгоритм эффективен при частично отсортированных данных и работает \"на месте\", без выделения дополнительной памяти.",
+                   "Описание алгоритма: Вставками"
+                   //MessageBoxButtons.OK,
+                   //MessageBoxIcon.Information
+                   );
+
                 }
             };
             return AlComb;
@@ -359,10 +377,10 @@ namespace Визуализатор_сортировки
 
         public System.Windows.Forms.Label DrawLabel3()
         {
-            label_Bubble.Size = new Size(70, 30);
+            label_Bubble.Size = new Size(90, 30);
             label_Bubble.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Bubble.Location = new Point(575, 330);
-            label_Bubble.Text = "Вставками";
+            label_Bubble.Text = "Пузырьком";
             return label_Bubble;
         }
 
@@ -380,7 +398,7 @@ namespace Визуализатор_сортировки
             label_Comb.Size = new Size(70, 30);
             label_Comb.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label_Comb.Location = new Point(683, 330);
-            label_Comb.Text = "Пузырек";
+            label_Comb.Text = "Вставками";
             return label_Comb;
         }
 
@@ -457,7 +475,7 @@ namespace Визуализатор_сортировки
             }
 
             /* ---------- 2. подготовка исходных данных ---------- */
-            Start_work(Math.Max(2, Trackbar1.Value));           // минимум 2 элемента
+            Start_work(Math.Max(2, Trackbar1.Value));      // минимум 2 элемента
             Data.Series[0].Points.Clear();
             for (int i = 0; i < Numbers.Length; i++)
             {
@@ -465,13 +483,20 @@ namespace Визуализатор_сортировки
                 Data.Series[0].Points[i].Color = Color.Blue;
             }
 
+            /* ---------- 2-b. сброс внутренних флагов ---------- */
+            _cancelRequested = false;      // ← флаг, который ставит кнопка «Сброс»
+            paused = false;
+            stepPending = false;
+
             /* ---------- 3. получаем последовательность шагов ---------- */
-            var path = Algorithm.Sort(Numbers);                 // (i1, i2, v1, v2)
+            var path = Algorithm.Sort(Numbers);            // (i1, i2, v1, v2)
             Iters = 0;
 
             /* ---------- 4. основной цикл визуализации ---------- */
             foreach ((int i1, int i2, double v1, double v2) in path)
             {
+                if (_cancelRequested) break;               // мгновенное завершение
+
                 Iters++;
 
                 /* 4.1 подсветка сравнения */
@@ -484,17 +509,20 @@ namespace Визуализатор_сортировки
                 Data.Update();
 
                 /* 4.2 пауза / один шаг / авто-режим */
-                while (paused && !stepPending)                    // классическая пауза
+                while (paused && !stepPending && !_cancelRequested)
                     await Task.Delay(50);
 
-                if (stepPending)                                  // выполнить ровно ОДИН шаг
+                if (_cancelRequested) break;
+
+                if (stepPending)                // выполнить ровно ОДИН шаг
                 {
-                    stepPending = false;      // «поглощаем» запрос
-                    paused = true;       // сразу вернёмся в паузу после шага
+                    stepPending = false;
+                    paused = true;         // вернуться в паузу
                 }
-                else                                              // автоматический режим
+                else
                 {
                     await Task.Delay(Math.Max(10, Trackbar2.Value));
+                    if (_cancelRequested) break;
                 }
 
                 /* 4.3 анимация обмена (если требуется) */
@@ -510,6 +538,8 @@ namespace Визуализатор_сортировки
 
                     for (int f = 1; f <= frames; f++)
                     {
+                        if (_cancelRequested) break;
+
                         double t = f / (double)frames;
                         Numbers[i1] = old1 + (v1 - old1) * t;
                         Numbers[i2] = old2 + (v2 - old2) * t;
@@ -523,6 +553,7 @@ namespace Визуализатор_сортировки
 
                         await Task.Delay(frameDelay);
                     }
+                    if (_cancelRequested) break;
 
                     Numbers[i1] = v1;
                     Numbers[i2] = v2;
@@ -535,16 +566,29 @@ namespace Визуализатор_сортировки
                 LogLine("");   // пустая строка-разделитель
             }
 
-            /* ---------- 5. завершение ---------- */
-            for (int k = 0; k < Numbers.Length; k++)
-                Data.Series[0].Points[k].Color = Color.Blue;
+            /* ---------- 5. завершение или сброс ---------- */
+            if (_cancelRequested)
+            {
+                // Полный сброс визуализации и логов
+                Data.Series[0].Points.Clear();
+                Data.Update();
+                RCB.Clear();
+            }
+            else
+            {
+                for (int k = 0; k < Numbers.Length; k++)
+                    Data.Series[0].Points[k].Color = Color.Blue;
 
-            Data.Update();
-            LogLine($"Сортировка {What_Kind()} завершена за {Iters} шагов");
+                Data.Update();
+                LogLine($"Сортировка {What_Kind()} завершена за {Iters} шагов");
+            }
 
-            paused = false;   // сброс состояний
+            /* ---------- 6. финальная очистка внутренних состояний ---------- */
+            paused = false;
             stepPending = false;
+            _cancelRequested = false;        // чтобы следующий запуск начинал «с чистого листа»
         }
+
 
 
 
@@ -558,11 +602,11 @@ namespace Визуализатор_сортировки
             switch (Index)
             {
                 case 0:
-                    return "вставками";
+                    return "пузырьком";
                 case 1:
                     return "выбором";
                 case 2:
-                    return "пузырьком";
+                    return "вставками";
                 case 3:
                     return "методом слияния";
             }
