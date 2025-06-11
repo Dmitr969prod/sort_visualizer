@@ -319,7 +319,7 @@ namespace Визуализатор_сортировки
             Trackbar2.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             Trackbar2.ValueChanged += (sender, e) =>
             {
-                label_speed.Text = "Скорость (мс): " + Trackbar2.Value.ToString();
+                label_speed.Text = "Задержка (мс): " + Trackbar2.Value.ToString();
             };
             return Trackbar2;
         }
